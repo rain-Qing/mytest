@@ -1,0 +1,58 @@
+name: Build Test
+
+on:
+  push:
+    branches: [ test ]
+  pull_request:
+    branches: [ test ]
+  workflow_dispatch:
+
+jobs:
+  build-loongshield:
+    name: Build on ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - 'ubuntu:22.04'
+          - 'openanolis/anolisos:8'
+          - 'alibaba-cloud-linux-3-registry.cn-hangzhou.cr.aliyuncs.com/alinux3/alinux3:3.9'
+          - 'fedora:40'
+    container:
+      image: ${{ matrix.image }}
+
+    steps:
+    - name: Update and Install Git
+      if: matrix.image == 'ubuntu:22.04'
+      run: |
+        apt update
+        apt upgrade -y
+        apt-get install -y git
+      shell: bash
+
+    - name: Update and Install Git
+      if: contains(matrix.image, 'anolisos:8') || contains(matrix.image, 'alinux3:3.9')  || matrix.image == 'fedora:40'
+      run: |
+        dnf makecache
+        dnf update -y
+        dnf install -y git
+      shell: bash
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Install Dependencies
+      run: |
+        if [[ "${{ matrix.image }}" == "ubuntu:22.04" ]]; then
+          cat /etc/os-release && pwd && ls -al && echo $GITHUB_WORKSPACE
+          cd && pwd && ls -al
+          cd $GITHUB_WORKSPACE && pwd && ls -al
+        elif [[ "${{ matrix.image }}" == *"anolisos:8" ]] || [[ "${{ matrix.image }}" == *"alinux3:3.9" ]] || [[ "${{ matrix.image }}" == "fedora:40" ]]; then
+          cat /etc/os-release && pwd && ls -al && echo $GITHUB_WORKSPACE
+          cd && pwd && ls -al
+          cd $GITHUB_WORKSPACE && pwd && ls -al
+        fi
+      shell: bash

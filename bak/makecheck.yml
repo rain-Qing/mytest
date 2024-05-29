@@ -1,0 +1,43 @@
+name: build CI
+
+on:
+  push:
+    branches: [ test ]
+  pull_request:
+    branches: [ test ]
+  workflow_dispatch:
+
+jobs:
+
+  build-anolis:
+    name: Build on anolis
+    runs-on: ubuntu-latest
+    container:
+        image: alibaba-cloud-linux-3-registry.cn-hangzhou.cr.aliyuncs.com/alinux3/alinux3:latest
+    steps:
+    - name: update git
+      run: |
+        dnf makecache
+        dnf update -y
+        dnf install -y git
+
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Run build
+      run: |
+        dnf makecache
+        dnf update -y
+        dnf install -y cmake gcc gcc-c++ perl perl-IPC-Cmd libzstd-devel xz-devel \
+        libcurl-devel libarchive-devel systemd-devel libmount-devel \
+        elfutils-libelf-devel libpsl-devel
+        dnf install -y dbus-devel libacl-devel libblkid-devel libcap-devel \
+        libgcrypt-devel libselinux-devel libxml2-devel libxslt-devel \
+        libattr-devel make openldap-devel pcre-devel perl-XML-Parser perl-XML-XPath \
+        perl-devel python36-devel rpm-devel swig bzip2-devel libyaml-devel \
+        xmlsec1-devel xmlsec1-openssl-devel GConf2-devel audit-libs-devel
+        mkdir -p build && cd build
+        cmake .. && make || exit 1
+
