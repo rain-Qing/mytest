@@ -1,0 +1,56 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# 控制工作流何时运行
+on:
+  # push或pull_request，针对mater,test分支
+  push:
+    branches:
+      - master
+      - test
+  pull_request:
+    branches:
+      - master
+      - test
+
+  # 允许从“Actions”选项卡手动运行此工作流
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, fedora-latest, centos-latest]
+        include:
+          - os: ubuntu-latest
+            package_manager: apt-get
+          # - os: fedora-latest
+            # package_manager: dnf
+          # - os: centos-7
+            # package_manager: yum
+
+    # 定义一个job中的执行序列，即一系列要按顺序执行的任务或命令
+    steps:
+      # 从GitHub仓库中检出代码到运行环境的工作目录中
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo ${{ matrix.package_manager }} update
+          sudo ${{ matrix.package_manager }} install -y cmake make gcc g++ python3 python3-pip
+
+      - name: Run tests
+        run: |
+          make
+          ./hello
+          cat /etc/os-release
+
+    # - name: Upload Test Artifacts (optional)
+      # if: failure()
+      # uses: actions/upload-artifact@v3
+      # with:
+        # name: test-failure-${{ runner.os }}-${{ matrix.python-version }}
+        # path: test-reports/

@@ -1,0 +1,80 @@
+name: Multi-Linux CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - distro: centos
+            version: 7
+          - distro: fedora
+            version: 38
+          - distro: ubuntu
+            version: 20.04
+          - distro: openanolis/anolisos
+            version: latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run tests on ${{ matrix.distro }}:${{ matrix.version }}
+      env:
+        DISTRO: ${{ matrix.distro }}
+        VERSION: ${{ matrix.version }}
+      run: |
+        # 根据不同的Linux发行版拉取Docker镜像并运行测试
+        case $DISTRO in
+          centos)
+            docker run -v $GITHUB_WORKSPACE:/app --workdir /app centos:${VERSION} /bin/bash -c "
+            cat /etc/os-release && pwd && ls
+            yum makecache
+            yum install -y gcc make
+            make
+            ./hello
+            make clean
+            "
+            ;;
+          fedora)
+            docker run -v $GITHUB_WORKSPACE:/app --workdir /app fedora:${VERSION} /bin/bash -c "
+            cat /etc/os-release && pwd && ls
+            dnf makecache
+            dnf install -y gcc make
+            make
+            ./hello
+            make clean
+            "
+            ;;
+          ubuntu)
+            docker run -v $GITHUB_WORKSPACE:/app --workdir /app ubuntu:${VERSION} /bin/bash -c "
+            cat /etc/os-release && pwd && ls
+            apt-get update
+            apt-get install -y gcc make
+            make
+            ./hello
+            make clean
+            "
+            ;;
+          openanolis/anolisos)
+            docker run -v $GITHUB_WORKSPACE:/app --workdir /app openanolis/anolisos:${VERSION} /bin/bash -c "
+            cat /etc/os-release && pwd && ls
+            dnf makecache
+            dnf install -y gcc make
+            make
+            ./hello
+            make clean
+            "
+            ;;
+          *)
+            echo "Unsupported distribution: $DISTRO"
+            exit 1
+            ;;
+        esac
